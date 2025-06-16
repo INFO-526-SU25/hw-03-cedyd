@@ -1,28 +1,196 @@
 ---
 title: "HW 03"
-author: "INSERT YOUR NAME HERE"
+author: "Cedric Destin"
 format:
   html:
     embed-resources: true
+    execute:
+      warning: false
+      message: false
+      error: false
 toc: true
 ---
+
+```{r}
+#| label: Setup
+options(warn=-1)
+if (!require("pacman")) 
+  install.packages("pacman")
+
+# use this line for installing/loading
+pacman::p_load(tidyverse,
+               glue,
+               scales,
+               openintro,
+               gridExtra,
+               ggrepel,
+               ggmap,
+               ggridges,
+               dsbox,
+               devtools,
+               fs,
+               janitor,
+               here,
+               dplyr,
+               palmerpenguins,
+               stringr,
+               ggplot2,
+               plotly) 
+```
 
 ## 1 - Du Bois challenge.
 
 ```{r}
-#| label: label-me-1
+#| label: Dubois Challenge
+income <- read_csv(here("data", "income.csv"), 
+                    show_col_types = FALSE)
 
+```
+
+```{r}
+income <- income |> 
+  mutate(
+      Rent_pct = Rent / 100,
+      Food_pct = Food / 100,
+      Clothes_pct = Clothes / 100,
+      Tax_pct = Tax / 100,
+      Other_pct = Other / 100
+    )
+```
+
+```{r}
+income <- income %>%
+  mutate(Class = paste0(as.character(Class), "   $", as.character(Average_Income)))
+
+```
+
+```{r}
+income$Class <- factor(income$Class, levels = c("$1000 AND OVER   $1125", "$750-1000   $880", "$500-750   $547", "$400-500   $433.82", "$300-400   $335.66", "$200-300   $249.45", "$100-200   $139.1"))
+```
+
+```{r}
+glimpse(income)
+```
+
+```{r}
+# Your original code, modified to include text labels
+fig <- plot_ly(income, x = ~Rent, y = ~Class, 
+               type = 'bar', 
+               orientation = 'h',
+               name = 'Rent',
+               # --- Add these lines ---
+               text = ~Rent_pct,                 # Use the percentage column for the text data
+               textposition = 'inside',
+               texttemplate = '%{text:.0%}',      # Format the text as a percentage with 0 decimal places
+               # ----------------------
+               marker = list(color = '#121210'))
+
+fig <- fig %>% add_trace(x = ~Food, name = 'Food',
+                         # --- Add these lines ---
+                         text = ~Food_pct,
+                         textposition = 'inside',
+                         texttemplate = '%{text:.0%}',
+                         # ----------------------
+                         marker = list(color = '#7D5A7F'))
+
+fig <- fig %>% add_trace(x = ~Clothes, name = 'Clothes',
+                         # --- Add these lines ---
+                         text = ~Clothes_pct,
+                         textposition = 'inside',
+                         texttemplate = '%{text:.0%}',
+                         # ----------------------
+                         marker = list(color = '#D79684'))
+
+fig <- fig %>% add_trace(x = ~Tax, name = 'Tax',
+                         # --- Add these lines ---
+                         text = ~Tax_pct,
+                         textposition = 'inside',
+                         texttemplate = '%{text:.1%}',
+                         # ----------------------
+                         marker = list(color = '#003e80'))
+
+fig <- fig %>% add_trace(x = ~Other, name = 'Other',
+                         # --- Add these lines ---
+                         text = ~Other_pct,
+                         textposition = 'inside',
+                         texttemplate = '%{text:.1%}',
+                         # ----------------------
+                         marker = list(color = '#e6f2ff'))
+
+# Apply the layout (no changes needed here)
+fig <- fig %>% layout(
+  barmode = 'stack',
+  title = "INCOME AND EXPENITURE OF 150 NEGRO FAMILIES IN ATLANTA, GA. U.S.A.",
+  titlefont = list(size = 15, color = "#000000"),
+  xaxis = list(
+    title = "FOR FUTHER STATISTICS RAISE THIS FRAME",
+    showticklabels = FALSE
+  ),
+    annotations = list(
+      list(
+        x = -0.28,
+        y = 1.025,
+        text = "Class     Actual Average",
+        showarrow = FALSE,
+        xref = "paper",
+        yref = "paper"
+      )
+    ),
+  yaxis = list(title = ""),
+  showlegend = FALSE,
+  plot_bgcolor = "#CAB2A0",   # inside plot area
+  paper_bgcolor = "#CAB2A0"   # outside plot area
+)
+
+# Display the figure
+fig
+```
+
+```{r}
+library(plotly)
+
+# Sample data
+data <- data.frame(
+  x = 1:5,
+  y = c(10, 15, 13, 17, 20)
+)
+
+# Create the plot
+fig <- plot_ly(data, x = ~x, y = ~y, type = 'scatter', mode = 'lines')
+
+# Update layout with increased margins
+fig <- fig %>%
+  layout(
+    margin = list(l = 50, r = 50, b = 50, t = 100, pad = 4)
+  )
+
+# Add text annotation outside the plot
+fig <- fig %>%
+  layout(
+    annotations = list(
+      list(
+        x = 0.5,
+        y = 1.1,
+        text = "This text is outside the plot area",
+        showarrow = FALSE,
+        xref = "paper",
+        yref = "paper"
+      )
+    )
+  )
+
+# Print the plot
+fig
 ```
 
 ## 2 - COVID survey - interpret
 
 ```{r}
-#| label: label-me-2
+
 
 ```
 
 ## 3 - COVID survey - reconstruct
-
 
 ## 4 - COVID survey - re-reconstruct
 
