@@ -11,7 +11,7 @@ format:
 toc: true
 ---
 
-```{r}
+```{r setup}
 #| label: Setup
 options(warn=-1)
 if (!require("pacman")) 
@@ -43,14 +43,15 @@ pacman::p_load(tidyverse,
 
 ## 1 - Du Bois challenge.
 
-```{r}
-#| label: Dubois Challenge
+```{r import_dubois_challenge}
+#| label: import_dubois_challenge
 income <- read_csv(here("data", "income.csv"), 
                     show_col_types = FALSE)
 
 ```
 
-```{r}
+```{r clean_dubois_challenge}
+#| label: clean_dubois_challenge
 income <- income |> 
   mutate(
       Rent_pct = Rent / 100,
@@ -61,13 +62,15 @@ income <- income |>
     )
 ```
 
-```{r}
+```{r add_average_income}
+#| label: add_average_income
 income <- income %>%
   mutate(Class = paste0(as.character(Class), "   $", as.character(Average_Income)))
 
 ```
 
-```{r}
+```{r factor_class_order}
+#| label: factor_class_order
 income$Class <- factor(income$Class, levels = c("$1000 AND OVER   $1125", "$750-1000   $880", "$500-750   $547", "$400-500   $433.82", "$300-400   $335.66", "$200-300   $249.45", "$100-200   $139.1"))
 ```
 
@@ -75,7 +78,8 @@ income$Class <- factor(income$Class, levels = c("$1000 AND OVER   $1125", "$750-
 glimpse(income)
 ```
 
-```{r}
+```{r plot_income_expenditure}
+#| label: plot_income_expenditure
 # Your original code, modified to include text labels
 fig <- plot_ly(income, x = ~Rent, y = ~Class, 
                type = 'bar', 
@@ -160,8 +164,8 @@ b. On the other hand, the groups that did not have COVID vaccines had responses 
 
 
 ## 3 - COVID survey - reconstruct
-```{r}
-#| label: COVID survey - reconstruct
+```{r covid_survey_reconstruct}
+#| label: COVID_survey_reconstruct
 covid_survey <- read_csv(here("data", "covid-survey.csv"),
                          show_col_types = FALSE, skip = 1)
 glimpse(covid_survey)
@@ -178,7 +182,8 @@ print(
 )
 
 ```
-```{r}
+```{r clean_covid_survey}
+#| label: clean_covid_survey
 covid_survey <- covid_survey %>%
   mutate(
     exp_already_vax = ifelse(exp_already_vax == 0, "No", "Yes"),
@@ -205,7 +210,8 @@ print(
 )
 ```
 
-```{r}
+```{r pivot_covid_survey}
+#| label: pivot_covid_survey
 covid_survey_longer <- covid_survey |>
   pivot_longer(
     cols = starts_with("exp_"),
@@ -222,7 +228,8 @@ covid_survey_longer <- covid_survey |>
 print(covid_survey_longer)
 ```
 
-```{r}
+```{r group_covid_survey}
+#| label: group_covid_survey
 covid_survey_summary_stats_by_group <- covid_survey_longer %>%
   group_by(explanatory, explanatory_value, response) %>%
   summarise(
@@ -234,7 +241,8 @@ covid_survey_summary_stats_by_group <- covid_survey_longer %>%
 print(covid_survey_summary_stats_by_group, n = Inf)
 ```
 
-```{r}
+```{r summarise_covid_survey}
+#| label: summarise_covid_survey
 covid_survey_summary_stats_all <- covid_survey_longer %>%
   group_by(response) %>%
   summarise(
@@ -248,7 +256,8 @@ covid_survey_summary_stats_all <- covid_survey_longer %>%
 print(covid_survey_summary_stats_all, n = Inf)
 ```
 
-```{r}
+```{r bind_dataframes}
+#| label: bind_dataframes
 covid_survey_summary_stats <- bind_rows(
   covid_survey_summary_stats_by_group,
   covid_survey_summary_stats_all
@@ -257,7 +266,8 @@ covid_survey_summary_stats <- bind_rows(
 print(covid_survey_summary_stats)
 ```
 
-```{r}
+```{r mutate_covid_survey}
+#| label: mutate_covid_survey
 covid_survey_summary_stats  <- covid_survey_summary_stats %>%
   mutate(
     explanatory = case_when(
@@ -282,23 +292,26 @@ covid_survey_summary_stats  <- covid_survey_summary_stats %>%
 print(covid_survey_summary_stats)
 ```
 
-```{r}
+```{r change_order}
+#| label: change_order
 custom_order <- c("All", "Age", "Gender", "Race", "Ethnicity", "Profession", "Had COVID vaccine", "Had flu vaccine this year")
 covid_survey_summary_stats$explanatory <- factor(covid_survey_summary_stats$explanatory, levels = custom_order)
 covid_survey_summary_stats_sorted <- covid_survey_summary_stats[order(covid_survey_summary_stats$explanatory), ]
 print(covid_survey_summary_stats_sorted)
 ```
 
-```{r}
+```{r change_order_level_2}
+#| label: change_order_level_2
 custom_order <- c("", ">30", "26-30", "21-25", "<20", "Prefer not to say", "Non-binary third gender", "Male", "Female", 
 "White", "Native Hawaiian / Other Pacific Islander", "Black or African American", "Asian",  "American Indian / Alaskan Native", 
-"Non-Hispanic/Non-Latino", "Hispanic / Latino", "Nursing", "Medical", "Yes", "No", "Yes", "No")
+"Non-Hispanic/Non-Latino", "Hispanic / Latino", "Nursing", "Medical", "Yes", "No")
 covid_survey_summary_stats_sorted$explanatory_value <- factor(covid_survey_summary_stats_sorted$explanatory_value, levels = custom_order)
 covid_survey_summary_stats_sorted <- covid_survey_summary_stats_sorted[order(covid_survey_summary_stats_sorted$explanatory_value), ]
 print(covid_survey_summary_stats_sorted)
 ```
 
-```{r}
+```{r plot_covid_survey}
+#| label: plot_covid_survey
 ggplot(covid_survey_summary_stats_sorted, aes(x = mean, y = explanatory_value)) +
   geom_point(position = position_dodge(width = 0.5)) +
   geom_errorbarh(aes(xmin = low, xmax = high), height = 0.2, position = position_dodge(width = 0.5)) +
@@ -319,5 +332,159 @@ ggplot(covid_survey_summary_stats_sorted, aes(x = mean, y = explanatory_value)) 
 ```
 
 ## 4 - COVID survey - re-reconstruct
+```{r covid_survey_re_reconstruct}
+#| label: covid_survey_re_reconstruct
+covid_survey_summary_stats_all <- covid_survey_longer %>%
+  group_by(response) %>%
+  summarise(
+    mean = mean(as.numeric(response_value), na.rm = TRUE),
+    low = quantile(as.numeric(response_value), probs = 0.25, na.rm = TRUE),
+    high = quantile(as.numeric(response_value), probs = 0.75, na.rm = TRUE),
+    explanatory = "All",
+    explanatory_value = ""
+  )
+
+print(covid_survey_summary_stats_all, n = Inf)
+```
+
+```{r bind_dataframes_2}
+#| label: bind_dataframes_2
+covid_survey_summary_stats <- bind_rows(
+  covid_survey_summary_stats_by_group,
+  covid_survey_summary_stats_all
+)
+
+print(covid_survey_summary_stats)
+```
+
+```{r mutate_covid_survey_2}
+#| label: mutate_covid_survey_2
+covid_survey_summary_stats  <- covid_survey_summary_stats %>%
+  mutate(
+    explanatory = case_when(
+      explanatory == "exp_age_bin" ~ "Age",
+      explanatory == "exp_already_vax" ~ "Had COVID vaccine",
+      explanatory == "exp_flu_vax" ~ "Had flu vaccine this year",
+      explanatory == "exp_profession" ~ "Profession",
+      explanatory == "exp_gender" ~ "Gender",
+      explanatory == "exp_race" ~ "Race",
+      explanatory == "exp_ethnicity" ~ "Ethnicity",
+      explanatory == "All" ~ "All"
+      ),
+      response = case_when(
+      response == "resp_safety" ~ "Based on my understanding, I believe the vaccine is safe",
+      response == "resp_confidence_science" ~ "I am confident in the scientific vetting process for the new COVID vaccines",
+      response == "resp_feel_safe_at_work" ~ "Getting the vaccine will make me feel safer at work",
+      response == "resp_will_recommend" ~ "I will recommend the vaccine to family, friends, and community members",
+      response == "resp_trust_info" ~ "I trust the information that I have received about the vaccines",
+      response == "resp_concern_safety" ~ "I am concerned about the safety and side effects of the vaccine"
+    )
+  )
+print(covid_survey_summary_stats)
+```
+
+```{r change_order_2}
+#| label: change_order_2
+custom_order <- c("All", "Age", "Gender", "Race", "Ethnicity", "Profession", "Had COVID vaccine", "Had flu vaccine this year")
+covid_survey_summary_stats$explanatory <- factor(covid_survey_summary_stats$explanatory, levels = custom_order)
+covid_survey_summary_stats_sorted_2 <- covid_survey_summary_stats[order(covid_survey_summary_stats$explanatory), ]
+print(covid_survey_summary_stats_sorted_2)
+```
+
+```{r change_order_level_2_2}
+#| label: change_order_level_2_2
+custom_order_2 <- c("", ">30", "26-30", "21-25", "<20", "Prefer not to say", "Non-binary third gender", "Male", "Female", 
+"White", "Native Hawaiian / Other Pacific Islander", "Black or African American", "Asian",  "American Indian / Alaskan Native", 
+"Non-Hispanic/Non-Latino", "Hispanic / Latino", "Nursing", "Medical", "Yes", "No")
+covid_survey_summary_stats_sorted_2$explanatory_value <- factor(covid_survey_summary_stats_sorted_2$explanatory_value, levels = custom_order_2)
+covid_survey_summary_stats_sorted_2 <- covid_survey_summary_stats_sorted_2[order(covid_survey_summary_stats_sorted_2$explanatory_value), ]
+print(covid_survey_summary_stats_sorted_2)
+```
+
+```{r plot_covid_survey_2}
+#| label: plot_covid_survey_2
+ggplot(covid_survey_summary_stats_sorted_2, aes(x = mean, y = explanatory_value)) +
+  geom_point(position = position_dodge(width = 0.5)) +
+  geom_errorbarh(aes(xmin = low, xmax = high), height = 0.2, position = position_dodge(width = 0.5)) +
+  facet_grid(cols = vars(response), 
+              rows = vars(explanatory),
+              labeller = labeller(response = label_wrap_gen(15),
+                                  explanatory = label_wrap_gen(15)),
+              space = "free_y",
+              scales = "free_y") +
+  labs(x = "Mean likert score \n (Error bars range from 25th to 75th percentile)", y = "") + 
+  theme_minimal() +
+  theme(
+    strip.background = element_rect(fill = "gray90", color = "lightgray"),
+    strip.text.x = element_text(angle = 0),
+    strip.text.y = element_text(angle = 0)
+  ) + 
+  removeGrid()
+```
 
 ## 5 - COVID survey - another view
+```{r covid_survey_fixing_names}
+#| label: covid_survey_fixing_names
+covid_survey_longer <- covid_survey_longer %>%
+  mutate(
+    response_value = as.numeric(response_value),
+    explanatory = case_when(
+      explanatory == "exp_age_bin" ~ "Age",
+      explanatory == "exp_already_vax" ~ "Had COVID vaccine",
+      explanatory == "exp_flu_vax" ~ "Had flu vaccine this year",
+      explanatory == "exp_profession" ~ "Profession",
+      explanatory == "exp_gender" ~ "Gender",
+      explanatory == "exp_race" ~ "Race",
+      explanatory == "exp_ethnicity" ~ "Ethnicity"
+    ),
+    response = case_when(
+      response == "resp_safety" ~ "Based on my understanding, I believe the vaccine is safe",
+      response == "resp_confidence_science" ~ "I am confident in the scientific vetting process for the new COVID vaccines",
+      response == "resp_feel_safe_at_work" ~ "Getting the vaccine will make me feel safer at work",
+      response == "resp_will_recommend" ~ "I will recommend the vaccine to family, friends, and community members",
+      response == "resp_trust_info" ~ "I trust the information that I have received about the vaccines",
+      response == "resp_concern_safety" ~ "I am concerned about the safety and side effects of the vaccine"
+    )
+  ) 
+print(covid_survey_longer)
+```
+
+```{r some_pivoting}
+#| label: some_pivoting
+covid_survey_longer <- covid_survey_longer %>%
+  mutate(
+    max = 5
+    )
+
+covid_survey_all <- covid_survey_longer %>%
+  group_by(response) %>%
+  summarise(
+    total = sum(as.numeric(response_value), na.rm = TRUE)
+  )
+  covid_survey_all <- covid_survey_all %>%
+    mutate(total_sum = sum(total, na.rm = TRUE))
+
+covid_survey_all <- covid_survey_all %>%
+  mutate(pct = total / total_sum) %>%
+  select(-total, -total_sum)
+print(covid_survey_all, n = Inf)
+
+```
+```{r plot_covid_survey_all}
+#| label: plot_covid_survey_all
+ggplot(covid_survey_all, aes(x = response, y = pct)) +
+  geom_col() +
+  coord_flip() +
+  labs(x = "", y = "Proportion") +
+  scale_y_continuous(labels = scales::percent) +
+  theme_minimal() +
+  scale_x_discrete(labels = scales::label_wrap(25)) + 
+  theme(
+    axis.text.y = element_text(size = 14)
+  )
+```
+```{r plot_covid_survey_all_stacked}
+#| label: plot_covid_survey_all_stacked
+ggplot(covid_survey_all, aes(y = pct, fill = response, x = "")) +
+  geom_bar(position="stack", stat="identity")
+```
