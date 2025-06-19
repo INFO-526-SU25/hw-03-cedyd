@@ -37,7 +37,9 @@ pacman::p_load(tidyverse,
                ggplot2,
                plotly,
                Hmisc,
-               ggExtra
+               ggExtra,
+               patchwork,
+               viridis
                ) 
 ```
 
@@ -73,6 +75,8 @@ income <- income %>%
 #| label: factor_class_order
 income$Class <- factor(income$Class, levels = c("$1000 AND OVER   $1125", "$750-1000   $880", "$500-750   $547", "$400-500   $433.82", "$300-400   $335.66", "$200-300   $249.45", "$100-200   $139.1"))
 ```
+
+Sources: https://stackoverflow.com/questions/18413756/re-ordering-factor-levels-in-data-frame
 
 ```{r}
 glimpse(income)
@@ -153,17 +157,14 @@ fig <- fig %>% layout(
 fig
 ```
 
+Sources: https://plotly.com/r/horizontal-bar-charts/ https://plotly.com/r/text-and-annotations/
+
 ## 2 - COVID survey - interpret
-The plot illustrates opinions made by several different groups regarding the COVID vaccine below are three observations I made:
-1.	Nurses seem to strongly recommend the vaccine, with a very small error bar, illustrating that most nurses are of the same mindset. In fact, most groups seem to recommend the vaccines except for a few groups, “Had COVID vaccine: No” and “Gender: Prefer not to say”.
-2.	Most groups were very confident in the scientific vetting the process for the new COVID vaccines, again, only a few groups showed disagreement to it, being the same groups disagreeing with the previous statement: “Had COVID vaccine: No” and “Gender: Prefer not to say”.
-3.	This time we could observe two very interesting groups, the “Had COVID vaccine” and the “Had flu vaccine this year”
-a. It is understandable that the people who had the COVID vaccine responded positively about the vaccine, like the people that had the flu vaccine this year, they mostly had positive feedback.
-b. On the other hand, the groups that did not have COVID vaccines had responses that were split straight in the middle, but with large amount of uncertainty. This illustrates that the consensus regarding the vaccine within that group is very broad, and that they may not have had the vaccines for a variety of reasons.
 
-
+The plot illustrates opinions made by several different groups regarding the COVID vaccine below are three observations I made: 1. Nurses seem to strongly recommend the vaccine, with a very small error bar, illustrating that most nurses are of the same mindset. In fact, most groups seem to recommend the vaccines except for a few groups, “Had COVID vaccine: No” and “Gender: Prefer not to say”. 2. Most groups were very confident in the scientific vetting the process for the new COVID vaccines, again, only a few groups showed disagreement to it, being the same groups disagreeing with the previous statement: “Had COVID vaccine: No” and “Gender: Prefer not to say”. 3. This time we could observe two very interesting groups, the “Had COVID vaccine” and the “Had flu vaccine this year” a. It is understandable that the people who had the COVID vaccine responded positively about the vaccine, like the people that had the flu vaccine this year, they mostly had positive feedback. b. On the other hand, the groups that did not have COVID vaccines had responses that were split straight in the middle, but with large amount of uncertainty. This illustrates that the consensus regarding the vaccine within that group is very broad, and that they may not have had the vaccines for a variety of reasons.
 
 ## 3 - COVID survey - reconstruct
+
 ```{r covid_survey_reconstruct}
 #| label: COVID_survey_reconstruct
 covid_survey <- read_csv(here("data", "covid-survey.csv"),
@@ -182,6 +183,7 @@ print(
 )
 
 ```
+
 ```{r clean_covid_survey}
 #| label: clean_covid_survey
 covid_survey <- covid_survey %>%
@@ -238,7 +240,7 @@ covid_survey_summary_stats_by_group <- covid_survey_longer %>%
     high = quantile(as.numeric(response_value), probs = 0.90, na.rm = TRUE)
   )
 
-print(covid_survey_summary_stats_by_group, n = Inf)
+print(covid_survey_summary_stats_by_group)
 ```
 
 ```{r summarise_covid_survey}
@@ -253,7 +255,7 @@ covid_survey_summary_stats_all <- covid_survey_longer %>%
     explanatory_value = ""
   )
 
-print(covid_survey_summary_stats_all, n = Inf)
+print(covid_survey_summary_stats_all)
 ```
 
 ```{r bind_dataframes}
@@ -310,7 +312,7 @@ covid_survey_summary_stats_sorted <- covid_survey_summary_stats_sorted[order(cov
 print(covid_survey_summary_stats_sorted)
 ```
 
-```{r plot_covid_survey}
+```{r plot_covid_survey, fig.width=10, fig.height=7}
 #| label: plot_covid_survey
 ggplot(covid_survey_summary_stats_sorted, aes(x = mean, y = explanatory_value)) +
   geom_point(position = position_dodge(width = 0.5)) +
@@ -331,6 +333,8 @@ ggplot(covid_survey_summary_stats_sorted, aes(x = mean, y = explanatory_value)) 
   removeGrid()
 ```
 
+Overall, I do not see a great difference between the 10 - 90th percentile plot and the 25 - 75th percentile plot. the error bar on the 25 - 75th percentile plot is narrower, but I do not think it is adding much value to the plot that the 10 - 90th percentile plot already provides. Hence my conclusion still stands that the overall sentiment towards the COVID vaccine is positive.
+
 ## 4 - COVID survey - re-reconstruct
 ```{r covid_survey_re_reconstruct}
 #| label: covid_survey_re_reconstruct
@@ -344,7 +348,7 @@ covid_survey_summary_stats_all <- covid_survey_longer %>%
     explanatory_value = ""
   )
 
-print(covid_survey_summary_stats_all, n = Inf)
+print(covid_survey_summary_stats_all)
 ```
 
 ```{r bind_dataframes_2}
@@ -401,7 +405,7 @@ covid_survey_summary_stats_sorted_2 <- covid_survey_summary_stats_sorted_2[order
 print(covid_survey_summary_stats_sorted_2)
 ```
 
-```{r plot_covid_survey_2}
+```{r plot_covid_survey_2, fig.width=10, fig.height=7}
 #| label: plot_covid_survey_2
 ggplot(covid_survey_summary_stats_sorted_2, aes(x = mean, y = explanatory_value)) +
   geom_point(position = position_dodge(width = 0.5)) +
@@ -449,42 +453,80 @@ covid_survey_longer <- covid_survey_longer %>%
 print(covid_survey_longer)
 ```
 
-```{r some_pivoting}
-#| label: some_pivoting
-covid_survey_longer <- covid_survey_longer %>%
-  mutate(
-    max = 5
-    )
-
-covid_survey_all <- covid_survey_longer %>%
+```{r}
+covid_survey_longer_grouped <- covid_survey_longer %>%
+  group_by(response, response_value) %>%
+  summarise(total = sum(response_value), .groups = "drop") %>%
   group_by(response) %>%
-  summarise(
-    total = sum(as.numeric(response_value), na.rm = TRUE)
-  )
-  covid_survey_all <- covid_survey_all %>%
-    mutate(total_sum = sum(total, na.rm = TRUE))
+  mutate(pct = total / sum(total)) %>%
+  ungroup()
 
-covid_survey_all <- covid_survey_all %>%
-  mutate(pct = total / total_sum) %>%
-  select(-total, -total_sum)
-print(covid_survey_all, n = Inf)
-
+print(covid_survey_longer_grouped)
 ```
-```{r plot_covid_survey_all}
+
+```{r change_number_tostrings}
+#| label: change_number_tostrings
+covid_survey_longer_grouped <- covid_survey_longer_grouped %>%
+mutate(
+    response_value = as.character(response_value),
+    response_value = case_when(
+      response_value == "1" ~ "Strongly Agree",
+      response_value == "2" ~ "Somewhat Agree",
+      response_value == "3" ~ "Neither Agree Nor Disagree",
+      response_value == "4" ~ "Somewhat Disagree",
+      response_value == "5" ~ "Strongly Disagree"
+    )
+  )
+```
+```{r change_order_3}
+#| label: change_order_3
+custom_order_3 <- c("Strongly Disagree", "Somewhat Disagree", "Neither Agree Nor Disagree", "Somewhat Agree", "Strongly Agree")
+covid_survey_longer_grouped$response_value <- factor(covid_survey_longer_grouped$response_value, levels = custom_order_3)
+covid_survey_longer_grouped <- covid_survey_longer_grouped[order(covid_survey_longer_grouped$response_value), ]
+print(covid_survey_longer_grouped)
+```
+```{r plot_covid_survey_all, fig.width=10, fig.height=7}
 #| label: plot_covid_survey_all
-ggplot(covid_survey_all, aes(x = response, y = pct)) +
-  geom_col() +
+ggplot(covid_survey_longer_grouped, aes(x = response_value, y = pct)) +
+  geom_col() + 
   coord_flip() +
-  labs(x = "", y = "Proportion") +
-  scale_y_continuous(labels = scales::percent) +
-  theme_minimal() +
-  scale_x_discrete(labels = scales::label_wrap(25)) + 
+  facet_grid(rows = vars(response), 
+              labeller = labeller(response = label_wrap_gen(15),
+                                  explanatory = label_wrap_gen(15)),
+              space = "free_y",
+              scales = "free_y") + 
   theme(
-    axis.text.y = element_text(size = 14)
-  )
+    strip.background = element_rect(fill = "gray90", color = "lightgray"),
+    strip.text.y = element_text(angle = 0)
+  ) +
+  labs(title = "Percentage of Votes to COVID Questions",
+       x = "COVID Survey Questions", 
+       y = "Percent of votes per Response Value",
+       fill = "Response Value")+
+  scale_y_continuous(labels = scales::percent)
+
 ```
-```{r plot_covid_survey_all_stacked}
+
+```{r plot_covid_survey_all_stacked, fig.width=14, fig.height=10}
 #| label: plot_covid_survey_all_stacked
-ggplot(covid_survey_all, aes(y = pct, fill = response, x = "")) +
-  geom_bar(position="stack", stat="identity")
+ggplot(covid_survey_longer_grouped, aes(y = pct, fill = response_value, x = "")) +
+  coord_flip() +
+  geom_bar(position="stack", stat="identity") +
+  scale_fill_viridis_d(option = "D") +
+  labs(title = "Percentage of Votes to COVID Questions",
+       x = "COVID Survey Questions", 
+       y = "Percent of votes per Response Value",
+       fill = "Response Value") +
+  facet_grid(rows = vars(response), 
+              labeller = labeller(response = label_wrap_gen(15),
+                                  explanatory = label_wrap_gen(15)),
+              space = "free_y",
+              scales = "free_y") + 
+  theme(
+    strip.background = element_rect(fill = "gray90", color = "lightgray"),
+    strip.text.y = element_text(angle = 0)
+  )+
+  scale_y_continuous(labels = scales::percent)
 ```
+
+Both the diverging bar chart and the stacked bar chart provide a clear understanding of the sentiment towards the COVID vaccine. The diverging bar plot shows that the "Strongly Agree" responses dominate on the plot. Although the stack bar chart illustrates the same information, it also shows that in certain cases, the sentiment is neutral overall. In other words, every answers are equally distributed, which a bit harder to see in the diverging chart.
