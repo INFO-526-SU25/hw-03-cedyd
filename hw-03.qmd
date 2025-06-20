@@ -39,7 +39,9 @@ pacman::p_load(tidyverse,
                Hmisc,
                ggExtra,
                patchwork,
-               viridis
+               viridis,
+               grid,
+               gridExtra
                ) 
 ```
 
@@ -89,46 +91,35 @@ fig <- plot_ly(income, x = ~Rent, y = ~Class,
                type = 'bar', 
                orientation = 'h',
                name = 'Rent',
-               # --- Add these lines ---
-               text = ~Rent_pct,                 # Use the percentage column for the text data
+               text = ~Rent_pct,
                textposition = 'inside',
-               texttemplate = '%{text:.0%}',      # Format the text as a percentage with 0 decimal places
-               # ----------------------
+               texttemplate = '%{text:.0%}',
                marker = list(color = '#121210'))
 
 fig <- fig %>% add_trace(x = ~Food, name = 'Food',
-                         # --- Add these lines ---
                          text = ~Food_pct,
                          textposition = 'inside',
                          texttemplate = '%{text:.0%}',
-                         # ----------------------
                          marker = list(color = '#7D5A7F'))
 
 fig <- fig %>% add_trace(x = ~Clothes, name = 'Clothes',
-                         # --- Add these lines ---
                          text = ~Clothes_pct,
                          textposition = 'inside',
                          texttemplate = '%{text:.0%}',
-                         # ----------------------
                          marker = list(color = '#D79684'))
 
 fig <- fig %>% add_trace(x = ~Tax, name = 'Tax',
-                         # --- Add these lines ---
                          text = ~Tax_pct,
                          textposition = 'inside',
                          texttemplate = '%{text:.1%}',
-                         # ----------------------
                          marker = list(color = '#003e80'))
 
 fig <- fig %>% add_trace(x = ~Other, name = 'Other',
-                         # --- Add these lines ---
                          text = ~Other_pct,
                          textposition = 'inside',
                          texttemplate = '%{text:.1%}',
-                         # ----------------------
                          marker = list(color = '#e6f2ff'))
 
-# Apply the layout (no changes needed here)
 fig <- fig %>% layout(
   barmode = 'stack',
   title = "INCOME AND EXPENITURE OF 150 NEGRO FAMILIES IN ATLANTA, GA. U.S.A.",
@@ -149,15 +140,18 @@ fig <- fig %>% layout(
     ),
   yaxis = list(title = ""),
   showlegend = FALSE,
-  plot_bgcolor = "#CAB2A0",   # inside plot area
-  paper_bgcolor = "#CAB2A0"   # outside plot area
+  plot_bgcolor = "#CAB2A0",
+  paper_bgcolor = "#CAB2A0"
 )
 
-# Display the figure
 fig
 ```
 
-Sources: https://plotly.com/r/horizontal-bar-charts/ https://plotly.com/r/text-and-annotations/
+Sources:
+
+https://plotly.com/r/horizontal-bar-charts/ https://plotly.com/r/text-and-annotations
+
+<https://stackoverflow.com/questions/66535691/plotly-how-to-automate-y-axis-with-space-for-texttemplate>
 
 ## 2 - COVID survey - interpret
 
@@ -335,7 +329,18 @@ ggplot(covid_survey_summary_stats_sorted, aes(x = mean, y = explanatory_value)) 
 
 Overall, I do not see a great difference between the 10 - 90th percentile plot and the 25 - 75th percentile plot. the error bar on the 25 - 75th percentile plot is narrower, but I do not think it is adding much value to the plot that the 10 - 90th percentile plot already provides. Hence my conclusion still stands that the overall sentiment towards the COVID vaccine is positive.
 
+Sources:
+
+<https://www.datamentor.io/r-programming/ifelse-function>
+
+<https://www.geeksforgeeks.org/switch-case-in-r/>
+
+<https://ggplot2.tidyverse.org/reference/labellers.html>
+
+<https://ggplot2.tidyverse.org/reference/geom_errorbarh.html>
+
 ## 4 - COVID survey - re-reconstruct
+
 ```{r covid_survey_re_reconstruct}
 #| label: covid_survey_re_reconstruct
 covid_survey_summary_stats_all <- covid_survey_longer %>%
@@ -424,9 +429,15 @@ ggplot(covid_survey_summary_stats_sorted_2, aes(x = mean, y = explanatory_value)
     strip.text.y = element_text(angle = 0)
   ) + 
   removeGrid()
+  
 ```
 
+Sources:
+
+<https://stackoverflow.com/questions/68989228/sort-dataframe-by-column-value-r>
+
 ## 5 - COVID survey - another view
+
 ```{r covid_survey_fixing_names}
 #| label: covid_survey_fixing_names
 covid_survey_longer <- covid_survey_longer %>%
@@ -460,8 +471,6 @@ covid_survey_longer_grouped <- covid_survey_longer %>%
   group_by(response) %>%
   mutate(pct = total / sum(total)) %>%
   ungroup()
-
-print(covid_survey_longer_grouped)
 ```
 
 ```{r change_number_tostrings}
@@ -478,18 +487,25 @@ mutate(
     )
   )
 ```
-```{r change_order_3}
-#| label: change_order_3
-custom_order_3 <- c("Strongly Disagree", "Somewhat Disagree", "Neither Agree Nor Disagree", "Somewhat Agree", "Strongly Agree")
-covid_survey_longer_grouped$response_value <- factor(covid_survey_longer_grouped$response_value, levels = custom_order_3)
+
+```{r plot_covid_survey_all_stacked, fig.width=28, fig.height=5}
+#| label: plot_covid_survey_all_stacked
+custom_order_4 <- c("Strongly Agree", "Somewhat Agree", "Neither Agree Nor Disagree", "Somewhat Disagree", "Strongly Disagree")
+covid_survey_longer_grouped$response_value <- factor(covid_survey_longer_grouped$response_value, levels = custom_order_4)
 covid_survey_longer_grouped <- covid_survey_longer_grouped[order(covid_survey_longer_grouped$response_value), ]
-print(covid_survey_longer_grouped)
-```
-```{r plot_covid_survey_all, fig.width=10, fig.height=7}
-#| label: plot_covid_survey_all
-ggplot(covid_survey_longer_grouped, aes(x = response_value, y = pct)) +
-  geom_col() + 
+
+p1 <- ggplot(covid_survey_longer_grouped, aes(y = pct, fill = response_value, x = "")) +
   coord_flip() +
+  scale_fill_manual(values = c("Strongly Agree" = "#00a40f", 
+                              "Somewhat Agree" = "#58d68d", 
+                              "Neither Agree Nor Disagree" = "#fbf700", 
+                              "Somewhat Disagree" = "#fb8100", 
+                              "Strongly Disagree" = "#fe001b")) +
+  geom_bar(position="stack", stat="identity") +
+  labs(
+       x = "", 
+       y = "Proportion of Responses", 
+      fill = "") +
   facet_grid(rows = vars(response), 
               labeller = labeller(response = label_wrap_gen(15),
                                   explanatory = label_wrap_gen(15)),
@@ -499,34 +515,66 @@ ggplot(covid_survey_longer_grouped, aes(x = response_value, y = pct)) +
     strip.background = element_rect(fill = "gray90", color = "lightgray"),
     strip.text.y = element_text(angle = 0)
   ) +
-  labs(title = "Percentage of Votes to COVID Questions",
-       x = "COVID Survey Questions", 
-       y = "Percent of votes per Response Value",
-       fill = "Response Value")+
-  scale_y_continuous(labels = scales::percent)
+  scale_y_continuous(labels = scales::percent) + 
+  theme(
+  strip.text.x = element_blank(),
+  strip.text.y = element_blank()
+) 
+```
+
+```{r}
+covid_survey_longer_grouped <- covid_survey_longer_grouped %>%
+  mutate(
+    pct = case_when(
+      response_value == "Strongly Disagree" ~ pct*-1,
+      response_value == "Somewhat Disagree" ~ pct*-1,
+      response_value == "Neither Agree Nor Disagree" ~ pct*-1,
+      response_value == "Somewhat Agree" ~ pct,
+      response_value == "Strongly Agree" ~ pct,
+    )
+  )
+```
+
+```{r fig.width=28, fig.height=5}
+custom_order_4 <- c("Strongly Disagree", "Somewhat Disagree", "Neither Agree Nor Disagree", "Strongly Agree", "Somewhat Agree")
+covid_survey_longer_grouped$response_value <- factor(covid_survey_longer_grouped$response_value, levels = custom_order_4)
+covid_survey_longer_grouped <- covid_survey_longer_grouped[order(covid_survey_longer_grouped$response_value), ]
+
+
+p2 <- ggplot(covid_survey_longer_grouped,aes(x=pct,
+              fill=response_value,y=response))+
+    geom_bar(stat='identity',width=0.5) +
+    scale_y_discrete(labels = label_wrap(width = 25)) +
+    scale_x_continuous(labels = scales::percent) + 
+    scale_fill_manual(values = c("Strongly Agree" = "#00a40f", 
+                              "Somewhat Agree" = "#58d68d", 
+                              "Neither Agree Nor Disagree" = "#fbf700", 
+                              "Somewhat Disagree" = "#fb8100", 
+                              "Strongly Disagree" = "#fe001b")) +
+    theme(legend.position = "none") +
+    labs(
+       x = "Proportion of Responses", y = " ") 
 
 ```
 
-```{r plot_covid_survey_all_stacked, fig.width=14, fig.height=10}
-#| label: plot_covid_survey_all_stacked
-ggplot(covid_survey_longer_grouped, aes(y = pct, fill = response_value, x = "")) +
-  coord_flip() +
-  geom_bar(position="stack", stat="identity") +
-  scale_fill_viridis_d(option = "D") +
-  labs(title = "Percentage of Votes to COVID Questions",
-       x = "COVID Survey Questions", 
-       y = "Percent of votes per Response Value",
-       fill = "Response Value") +
-  facet_grid(rows = vars(response), 
-              labeller = labeller(response = label_wrap_gen(15),
-                                  explanatory = label_wrap_gen(15)),
-              space = "free_y",
-              scales = "free_y") + 
-  theme(
-    strip.background = element_rect(fill = "gray90", color = "lightgray"),
-    strip.text.y = element_text(angle = 0)
-  )+
-  scale_y_continuous(labels = scales::percent)
+```{r}
+custom_title <- textGrob(
+  "Sentiments regarding the COVID-19 Vaccines",
+  gp = gpar(
+    fontfamily = "serif",
+    fontsize = 22, 
+    fontface = "bold", 
+    col = "darkblue" 
+  )
+)
+```
+
+```{r final_plot, fig.width=28, fig.height=10}
+grid.arrange(p2, p1, ncol = 2, top = "Sentiments regarding the COVID-19 Vaccines")                            
 ```
 
 Both the diverging bar chart and the stacked bar chart provide a clear understanding of the sentiment towards the COVID vaccine. The diverging bar plot shows that the "Strongly Agree" responses dominate on the plot. Although the stack bar chart illustrates the same information, it also shows that in certain cases, the sentiment is neutral overall. In other words, every answers are equally distributed, which a bit harder to see in the diverging chart.
+
+Sources:
+
+<https://rdrr.io/cran/ggpubr/man/text_grob.html>
